@@ -63,8 +63,7 @@ func (stat *whereStat) Build() (string, []interface{}) {
 	case "between":
 		return stat.buildBetween()
 	case "build":
-		sql, data := stat.buildSql()
-		return "(" + sql + ")", data
+		return stat.buildSql()
 	case "is":
 		return stat.buildIs()
 	case "not":
@@ -86,6 +85,13 @@ func (stat *whereStat) buildNot() (string, []interface{}) {
 
 func (stat *whereStat) buildSql() (string, []interface{}) {
 	if v, ok := stat.value.(Builder); ok {
+		if w, ok := v.(*WhereBuilder); ok {
+			sql, data := w.Build()
+			if len(w.wh)+len(w.orWh) > 1 {
+				return "(" + sql + ")", data
+			}
+			return sql, data
+		}
 		return v.Build()
 	}
 	panic("where func value must Builder")

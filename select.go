@@ -11,10 +11,15 @@ import (
 // Select sql
 type SelectBuilder struct {
 	where   where
+	having  where
 	isBuilt bool
+	limit   int
+	offset  int
 	sql     string
 	table   string
 	fields  []string
+	order   []string
+	groupBy []string
 	data    []interface{}
 }
 
@@ -22,10 +27,29 @@ func (builder *SelectBuilder) Build() (string, []interface{}) {
 	if !builder.isBuilt {
 		sql := fmt.Sprintf("select %s from %s", strings.Join(builder.fields, ", "), builder.table)
 		if builder.where != nil {
+			// 构建where语句
 			where, whereData := builder.where.Build()
 			sql = fmt.Sprintf("%s where %s", sql, where)
-			builder.data = whereData
+			builder.data = append(builder.data, whereData...)
 		}
+		if len(builder.groupBy) > 0 {
+			sql = fmt.Sprintf("%s group by %s", sql, strings.Join(builder.groupBy, ", "))
+		}
+
+		if builder.having != nil {
+			having, havingData := builder.having.Build()
+			sql = fmt.Sprintf("%s having %s", sql, having)
+			builder.data = append(builder.data, havingData...)
+		}
+
+		if len(builder.order) > 0 {
+			sql = fmt.Sprintf("%s order by %s", sql, strings.Join(builder.order, ", "))
+		}
+
+		if builder.limit > 0 || builder.offset > 0 {
+			sql = fmt.Sprintf("%s limit %d, %d", sql, builder.offset, builder.limit)
+		}
+
 		builder.sql = sql
 		builder.isBuilt = true
 	}
@@ -107,6 +131,33 @@ func (builder *SelectBuilder) OrWhere(column string, value interface{}) *SelectB
 
 func (builder *SelectBuilder) OrWhereFunc(f BuilderFunc) *SelectBuilder {
 	builder.getWhere().OrWhereFunc(f)
+	return builder
+}
+
+func (builder *SelectBuilder) OrderBy(column, sort string) *SelectBuilder {
+	sort = strings.ToLower(sort)
+	if sort != "desc" && sort != "asc" {
+		// 忽略错误的排序规则
+		return builder
+	}
+	builder.order = append(builder.order, column+" "+sort)
+	return builder
+}
+
+func (builder *SelectBuilder) GroupBy(column ...string) *SelectBuilder {
+	builder.groupBy = append(builder.groupBy, column...)
+	return builder
+}
+
+func (builder *SelectBuilder) Having(having BuilderFunc) *SelectBuilder {
+	builder.having = &WhereBuilder{}
+	builder.having.WhereFunc(having)
+	return builder
+}
+
+func (builder *SelectBuilder) Limit(offset, limit int) *SelectBuilder {
+	builder.limit = limit
+	builder.offset = offset
 	return builder
 }
 
