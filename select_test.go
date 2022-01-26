@@ -150,3 +150,14 @@ func TestErrorOrderBy(t *testing.T) {
 		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
 	}
 }
+
+func TestChildSelect(t *testing.T) {
+	sql := "select * from users where id in (select user_id from books where is_publish = 1)"
+	builderSql := sqlbuilder.Select("*").From("users").WhereIn("id", func() sqlbuilder.Builder {
+		return sqlbuilder.Select("user_id").From("books").Where("is_publish", 1)
+	}).String()
+
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}

@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-// Select
-// Select sql
+// SelectBuilder 查询语句构建器
 type SelectBuilder struct {
 	where   where
 	having  where

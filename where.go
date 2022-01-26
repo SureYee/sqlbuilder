@@ -69,6 +69,11 @@ func (stat *whereStat) Build() (string, []interface{}) {
 	case "not":
 		return stat.buildNot()
 	default:
+		switch f := stat.value.(type) {
+		case func() Builder:
+			sql, data := f().Build()
+			return fmt.Sprintf("%s %s (%s)", stat.column, stat.operate, sql), data
+		}
 		return fmt.Sprintf("%s %s ?", stat.column, stat.operate), []interface{}{stat.value}
 	}
 }
@@ -132,6 +137,12 @@ func (stat *whereStat) buildIn() (string, []interface{}) {
 		}
 		sql := fmt.Sprintf("%s in (%s)", stat.column, strings.Join(replace, ", "))
 		return sql, data
+	case reflect.Func:
+		if f, ok := stat.value.(func() Builder); ok {
+			sql, data := f().Build()
+			return fmt.Sprintf("%s in (%s)", stat.column, sql), data
+		}
+		panic("where func must BuilderFunc")
 	default:
 		panic("where in value must slice")
 	}
@@ -232,105 +243,6 @@ func (builder *WhereBuilder) Build() (string, []interface{}) {
 			}
 		}
 	}
-	if sql == "" {
-		return sql, data
-	}
 
 	return sql, data
 }
-
-// buildWhere
-// 构建where语句
-// func (builder *Builder) buildWhere() (string, []interface{}) {
-// 	var where string
-// 	data := make([]interface{}, 0)
-// 	for _, v := range builder.wh {
-// 		fmt.Println(v)
-// 		switch v.value.(type) {
-// 		case *Builder:
-// 			b := v.value.(*Builder)
-// 			if v.expression != "" {
-// 				//TODO where id = (sql)
-// 			} else {
-// 				if len(b.wh) > 0 {
-// 					w, d := b.buildWhere()
-// 					data = append(data, d...)
-// 					if where == "" {
-// 						where += fmt.Sprintf("(%s)", w)
-// 					} else {
-// 						where += fmt.Sprintf(" and (%s)", w)
-// 					}
-// 					if len(b.orWh) > 0 {
-// 						w, d := b.buildOrWhere()
-// 						data = append(data, d...)
-// 						where = fmt.Sprintf("%s or %s", where, w)
-// 					}
-// 				} else {
-// 					if len(b.orWh) > 0 {
-// 						w, d := builder.buildOrWhere()
-// 						data = append(data, d...)
-// 						where = fmt.Sprintf("%s where %s", where, w)
-// 					}
-// 				}
-
-// 			}
-// 		case string, int:
-// 			if where == "" {
-// 				where += v.expression
-// 			} else {
-// 				where += " and " + v.expression
-// 			}
-// 			data = append(data, v.value)
-// 		case []interface{}:
-// 			if where == "" {
-// 				where += v.expression
-// 			} else {
-// 				where += " and " + v.expression
-// 			}
-// 			value := v.value.([]interface{})
-// 			data = append(data, value...)
-// 		}
-// 	}
-// 	return where, data
-// }
-
-// // buildOrWhere
-// // 构建or语句
-// func (builder *whereBuilder) buildOrWhere() (string, []interface{}) {
-// 	var where string
-// 	data := make([]interface{}, 0)
-// 	for _, v := range builder.orWh {
-// 		switch v.value.(type) {
-// 		case *Builder:
-// 			b := v.value.(*Builder)
-// 			if v.expression != "" {
-// 				//TODO where id = (sql)
-// 			} else {
-// 				// orWhereFunc 需要加上()
-// 				w, d := b.buildWhere()
-// 				data = append(data, d...)
-// 				if where == "" {
-// 					where += fmt.Sprintf("(%s)", w)
-// 				} else {
-// 					where += fmt.Sprintf(" or (%s)", w)
-// 				}
-// 			}
-// 		case string, int:
-// 			if where == "" {
-// 				where += v.expression
-// 			} else {
-// 				where += " or " + v.expression
-// 			}
-// 			data = append(data, v.value)
-// 		case []interface{}:
-// 			if where == "" {
-// 				where += v.expression
-// 			} else {
-// 				where += " or " + v.expression
-// 			}
-// 			value := v.value.([]interface{})
-// 			data = append(data, value...)
-// 		}
-// 	}
-// 	return where, data
-// }
