@@ -3,7 +3,7 @@ package sqlbuilder_test
 import (
 	"testing"
 
-	"sureyee.com/sqlbuilder"
+	"github.com/sureyee/sqlbuilder"
 )
 
 func TestDelete(t *testing.T) {
