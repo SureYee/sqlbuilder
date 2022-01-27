@@ -7,3 +7,5 @@ type Builder interface {
 }
 
 type BuilderFunc func() Builder
+
+type Column string

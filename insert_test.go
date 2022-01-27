@@ -30,12 +30,13 @@ func TestInsertFields(t *testing.T) {
 }
 
 func TestInsertMap(t *testing.T) {
-	sql := "insert into users (username, age) values (\"zhangsan\", 10)"
+	sql1 := "insert into users (username, age) values (\"zhangsan\", 10)"
+	sql2 := "insert into users (age, username) values (10, \"zhangsan\")"
 	builderSql := sqlbuilder.Insert("users").Map(map[string]interface{}{
 		"username": "zhangsan",
 		"age":      10,
 	}).String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	if sql1 != builderSql && sql2 != builderSql {
+		t.Errorf("expected:`%v` or `%v`, got:`%v`", sql1, sql2, builderSql)
 	}
 }

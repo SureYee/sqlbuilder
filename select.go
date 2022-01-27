@@ -16,6 +16,7 @@ type SelectBuilder struct {
 	offset  int
 	sql     string
 	table   string
+	join    []*Join
 	fields  []string
 	order   []string
 	groupBy []string
@@ -25,16 +26,26 @@ type SelectBuilder struct {
 func (builder *SelectBuilder) Build() (string, []interface{}) {
 	if !builder.isBuilt {
 		sql := fmt.Sprintf("select %s from %s", strings.Join(builder.fields, ", "), builder.table)
+		// 构建join
+		if len(builder.join) > 0 {
+			for _, j := range builder.join {
+				join, joinData := j.Build()
+				sql = sql + " " + join
+				builder.data = append(builder.data, joinData...)
+			}
+		}
+
+		// 构建where语句
 		if builder.where != nil {
-			// 构建where语句
 			where, whereData := builder.where.Build()
 			sql = fmt.Sprintf("%s where %s", sql, where)
 			builder.data = append(builder.data, whereData...)
 		}
+		// 构建groupby
 		if len(builder.groupBy) > 0 {
 			sql = fmt.Sprintf("%s group by %s", sql, strings.Join(builder.groupBy, ", "))
 		}
-
+		// 构建having
 		if builder.having != nil {
 			having, havingData := builder.having.Build()
 			sql = fmt.Sprintf("%s having %s", sql, having)
@@ -193,4 +204,31 @@ func (builder *SelectBuilder) String() string {
 		}
 	}
 	return string(newSql)
+}
+
+func (builder *SelectBuilder) LeftJoin(table string, on where) *SelectBuilder {
+	builder.join = append(builder.join, &Join{
+		link:  "left",
+		table: table,
+		on:    on,
+	})
+	return builder
+}
+
+func (builder *SelectBuilder) RightJoin(table string, on where) *SelectBuilder {
+	builder.join = append(builder.join, &Join{
+		link:  "right",
+		table: table,
+		on:    on,
+	})
+	return builder
+}
+
+func (builder *SelectBuilder) InnerJoin(table string, on where) *SelectBuilder {
+	builder.join = append(builder.join, &Join{
+		link:  "inner",
+		table: table,
+		on:    on,
+	})
+	return builder
 }

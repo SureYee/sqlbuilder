@@ -161,3 +161,46 @@ func TestChildSelect(t *testing.T) {
 		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
 	}
 }
+
+func TestWhereFunc(t *testing.T) {
+	sql := "select * from users where gender = \"F\" and (age < 10 or age > 30)"
+	builderSql := sqlbuilder.Select("*").From("users").Where("gender", "F").WhereFunc(func() sqlbuilder.Builder {
+		return sqlbuilder.WhereOperate("age", "<", 10).OrWhereOperate("age", ">", 30)
+	}).String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}
+
+func TestLeftJoin(t *testing.T) {
+	sql := "select * from users left join books on books.user_id = users.id"
+	builderSql := sqlbuilder.Select("*").From("users").LeftJoin(
+		"books",
+		sqlbuilder.WhereColumn("books.user_id", "users.id"),
+	).String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}
+
+func TestRightJoin(t *testing.T) {
+	sql := "select * from users right join books on books.user_id = users.id"
+	builderSql := sqlbuilder.Select("*").From("users").RightJoin(
+		"books",
+		sqlbuilder.WhereColumn("books.user_id", "users.id"),
+	).String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}
+
+func TestInnerJoin(t *testing.T) {
+	sql := "select * from users inner join books on books.user_id = users.id"
+	builderSql := sqlbuilder.Select("*").From("users").InnerJoin(
+		"books",
+		sqlbuilder.WhereColumn("books.user_id", "users.id"),
+	).String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}

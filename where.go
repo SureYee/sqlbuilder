@@ -8,6 +8,8 @@ import (
 
 type where interface {
 	Where(string, interface{}) where
+	WhereColumn(string, string) where
+	WhereColumnOperate(string, string, string) where
 	WhereBetween(string, interface{}, interface{}) where
 	WhereLike(string, interface{}) where
 	WhereIn(string, interface{}) where
@@ -27,7 +29,7 @@ type WhereBuilder struct {
 }
 
 type whereStat struct {
-	column  string
+	column  Column
 	operate string
 	value   interface{}
 }
@@ -56,6 +58,18 @@ func WhereOperate(column, operate string, value interface{}) where {
 	return builder
 }
 
+func WhereColumn(column1, column2 string) where {
+	builder := &WhereBuilder{}
+	builder.WhereColumn(column1, column2)
+	return builder
+}
+
+func WhereColumnOperate(column1, operate, column2 string) where {
+	builder := &WhereBuilder{}
+	builder.WhereColumnOperate(column1, operate, column2)
+	return builder
+}
+
 func (stat *whereStat) Build() (string, []interface{}) {
 	switch stat.operate {
 	case "in":
@@ -73,6 +87,11 @@ func (stat *whereStat) Build() (string, []interface{}) {
 		case func() Builder:
 			sql, data := f().Build()
 			return fmt.Sprintf("%s %s (%s)", stat.column, stat.operate, sql), data
+		case BuilderFunc:
+			sql, data := f().Build()
+			return fmt.Sprintf("%s %s (%s)", stat.column, stat.operate, sql), data
+		case Column:
+			return fmt.Sprintf("%s %s %s", stat.column, stat.operate, stat.value), nil
 		}
 		return fmt.Sprintf("%s %s ?", stat.column, stat.operate), []interface{}{stat.value}
 	}
@@ -138,7 +157,11 @@ func (stat *whereStat) buildIn() (string, []interface{}) {
 		sql := fmt.Sprintf("%s in (%s)", stat.column, strings.Join(replace, ", "))
 		return sql, data
 	case reflect.Func:
-		if f, ok := stat.value.(func() Builder); ok {
+		switch f := stat.value.(type) {
+		case func() Builder:
+			sql, data := f().Build()
+			return fmt.Sprintf("%s in (%s)", stat.column, sql), data
+		case BuilderFunc:
 			sql, data := f().Build()
 			return fmt.Sprintf("%s in (%s)", stat.column, sql), data
 		}
@@ -151,6 +174,14 @@ func (stat *whereStat) buildIn() (string, []interface{}) {
 
 func (builder *WhereBuilder) Where(column string, value interface{}) where {
 	return builder.WhereOperate(column, "=", value)
+}
+
+func (builder *WhereBuilder) WhereColumn(column1, column2 string) where {
+	return builder.WhereOperate(column1, "=", Column(column2))
+}
+
+func (builder *WhereBuilder) WhereColumnOperate(column1, operate, column2 string) where {
+	return builder.WhereOperate(column1, operate, Column(column2))
 }
 
 func (builder *WhereBuilder) WhereBetween(column string, min, max interface{}) where {
@@ -177,7 +208,7 @@ func (builder *WhereBuilder) WhereNotNull(column string) where {
 // 可以指定操作符的where语句
 func (builder *WhereBuilder) WhereOperate(column, operate string, value interface{}) where {
 	builder.wh = append(builder.wh, &whereStat{
-		column:  column,
+		column:  Column(column),
 		operate: operate,
 		value:   value,
 	})
@@ -198,7 +229,7 @@ func (builder *WhereBuilder) OrWhere(column string, value interface{}) where {
 
 func (builder *WhereBuilder) OrWhereOperate(column, operate string, value interface{}) where {
 	builder.orWh = append(builder.orWh, &whereStat{
-		column:  column,
+		column:  Column(column),
 		operate: operate,
 		value:   value,
 	})
