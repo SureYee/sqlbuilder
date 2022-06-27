@@ -35,7 +35,7 @@ func (builder *UpdateBuilder) Map(mapData map[string]interface{}) *UpdateBuilder
 	return builder
 }
 
-func (builder *UpdateBuilder) getWhere() where {
+func (builder *UpdateBuilder) getWhere() WhereInterface {
 	if builder.where == nil {
 		builder.where = &WhereBuilder{}
 	}

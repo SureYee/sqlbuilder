@@ -9,8 +9,8 @@ import (
 
 // SelectBuilder 查询语句构建器
 type SelectBuilder struct {
-	where   where
-	having  where
+	where   WhereInterface
+	having  WhereInterface
 	isBuilt bool
 	limit   int
 	offset  int
@@ -78,7 +78,7 @@ func (builder *SelectBuilder) From(table string) *SelectBuilder {
 	return builder
 }
 
-func (builder *SelectBuilder) getWhere() where {
+func (builder *SelectBuilder) getWhere() WhereInterface {
 	if builder.where == nil {
 		builder.where = &WhereBuilder{}
 	}
@@ -208,7 +208,7 @@ func (builder *SelectBuilder) String() string {
 	return string(newSql)
 }
 
-func (builder *SelectBuilder) LeftJoin(table string, on where) *SelectBuilder {
+func (builder *SelectBuilder) LeftJoin(table string, on WhereInterface) *SelectBuilder {
 	builder.join = append(builder.join, &Join{
 		link:  "left",
 		table: table,
@@ -217,7 +217,7 @@ func (builder *SelectBuilder) LeftJoin(table string, on where) *SelectBuilder {
 	return builder
 }
 
-func (builder *SelectBuilder) RightJoin(table string, on where) *SelectBuilder {
+func (builder *SelectBuilder) RightJoin(table string, on WhereInterface) *SelectBuilder {
 	builder.join = append(builder.join, &Join{
 		link:  "right",
 		table: table,
@@ -226,7 +226,7 @@ func (builder *SelectBuilder) RightJoin(table string, on where) *SelectBuilder {
 	return builder
 }
 
-func (builder *SelectBuilder) InnerJoin(table string, on where) *SelectBuilder {
+func (builder *SelectBuilder) InnerJoin(table string, on WhereInterface) *SelectBuilder {
 	builder.join = append(builder.join, &Join{
 		link:  "inner",
 		table: table,

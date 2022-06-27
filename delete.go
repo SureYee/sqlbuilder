@@ -21,7 +21,7 @@ func Delete(table string) *DeleteBuilder {
 	}
 }
 
-func (builder *DeleteBuilder) getWhere() where {
+func (builder *DeleteBuilder) getWhere() WhereInterface {
 	if builder.where == nil {
 		builder.where = &WhereBuilder{}
 	}

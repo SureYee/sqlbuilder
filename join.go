@@ -5,7 +5,7 @@ import "fmt"
 type Join struct {
 	link  string
 	table string
-	on    where
+	on    WhereInterface
 }
 
 func (builder *Join) Build() (string, []interface{}) {

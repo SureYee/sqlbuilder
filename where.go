@@ -6,20 +6,20 @@ import (
 	"strings"
 )
 
-type where interface {
-	Where(string, interface{}) where
-	WhereColumn(string, string) where
-	WhereColumnOperate(string, string, string) where
-	WhereBetween(string, interface{}, interface{}) where
-	WhereLike(string, interface{}) where
-	WhereIn(string, interface{}) where
-	WhereNull(string) where
-	WhereNotNull(string) where
-	WhereOperate(string, string, interface{}) where
-	WhereFunc(BuilderFunc) where
-	OrWhere(string, interface{}) where
-	OrWhereOperate(string, string, interface{}) where
-	OrWhereFunc(BuilderFunc) where
+type WhereInterface interface {
+	Where(string, interface{}) WhereInterface
+	WhereColumn(string, string) WhereInterface
+	WhereColumnOperate(string, string, string) WhereInterface
+	WhereBetween(string, interface{}, interface{}) WhereInterface
+	WhereLike(string, interface{}) WhereInterface
+	WhereIn(string, interface{}) WhereInterface
+	WhereNull(string) WhereInterface
+	WhereNotNull(string) WhereInterface
+	WhereOperate(string, string, interface{}) WhereInterface
+	WhereFunc(BuilderFunc) WhereInterface
+	OrWhere(string, interface{}) WhereInterface
+	OrWhereOperate(string, string, interface{}) WhereInterface
+	OrWhereFunc(BuilderFunc) WhereInterface
 	Build() (string, []interface{})
 }
 
@@ -34,37 +34,37 @@ type whereStat struct {
 	value   interface{}
 }
 
-func Where(column string, value interface{}) where {
+func Where(column string, value interface{}) *WhereBuilder {
 	builder := &WhereBuilder{}
 	builder.Where(column, value)
 	return builder
 }
 
-func WhereLike(column string, value interface{}) where {
+func WhereLike(column string, value interface{}) *WhereBuilder {
 	builder := &WhereBuilder{}
 	builder.WhereLike(column, value)
 	return builder
 }
 
-func WhereNull(column string) where {
+func WhereNull(column string) *WhereBuilder {
 	builder := &WhereBuilder{}
 	builder.WhereNull(column)
 	return builder
 }
 
-func WhereOperate(column, operate string, value interface{}) where {
+func WhereOperate(column, operate string, value interface{}) *WhereBuilder {
 	builder := &WhereBuilder{}
 	builder.WhereOperate(column, operate, value)
 	return builder
 }
 
-func WhereColumn(column1, column2 string) where {
+func WhereColumn(column1, column2 string) *WhereBuilder {
 	builder := &WhereBuilder{}
 	builder.WhereColumn(column1, column2)
 	return builder
 }
 
-func WhereColumnOperate(column1, operate, column2 string) where {
+func WhereColumnOperate(column1, operate, column2 string) *WhereBuilder {
 	builder := &WhereBuilder{}
 	builder.WhereColumnOperate(column1, operate, column2)
 	return builder
@@ -172,41 +172,41 @@ func (stat *whereStat) buildIn() (string, []interface{}) {
 
 }
 
-func (builder *WhereBuilder) Where(column string, value interface{}) where {
+func (builder *WhereBuilder) Where(column string, value interface{}) WhereInterface {
 	return builder.WhereOperate(column, "=", value)
 }
 
-func (builder *WhereBuilder) WhereColumn(column1, column2 string) where {
+func (builder *WhereBuilder) WhereColumn(column1, column2 string) WhereInterface {
 	return builder.WhereOperate(column1, "=", Column(column2))
 }
 
-func (builder *WhereBuilder) WhereColumnOperate(column1, operate, column2 string) where {
+func (builder *WhereBuilder) WhereColumnOperate(column1, operate, column2 string) WhereInterface {
 	return builder.WhereOperate(column1, operate, Column(column2))
 }
 
-func (builder *WhereBuilder) WhereBetween(column string, min, max interface{}) where {
+func (builder *WhereBuilder) WhereBetween(column string, min, max interface{}) WhereInterface {
 	return builder.WhereOperate(column, "between", []interface{}{min, max})
 }
 
-func (builder *WhereBuilder) WhereIn(column string, value interface{}) where {
+func (builder *WhereBuilder) WhereIn(column string, value interface{}) WhereInterface {
 	return builder.WhereOperate(column, "in", value)
 }
 
-func (builder *WhereBuilder) WhereLike(column string, value interface{}) where {
+func (builder *WhereBuilder) WhereLike(column string, value interface{}) WhereInterface {
 	return builder.WhereOperate(column, "like", value)
 }
 
-func (builder *WhereBuilder) WhereNull(column string) where {
+func (builder *WhereBuilder) WhereNull(column string) WhereInterface {
 	return builder.WhereOperate(column, "is", nil)
 }
 
-func (builder *WhereBuilder) WhereNotNull(column string) where {
+func (builder *WhereBuilder) WhereNotNull(column string) WhereInterface {
 	return builder.WhereOperate(column, "not", nil)
 }
 
 // WhereOperate where column > value
 // 可以指定操作符的where语句
-func (builder *WhereBuilder) WhereOperate(column, operate string, value interface{}) where {
+func (builder *WhereBuilder) WhereOperate(column, operate string, value interface{}) WhereInterface {
 	builder.wh = append(builder.wh, &whereStat{
 		column:  Column(column),
 		operate: operate,
@@ -215,7 +215,7 @@ func (builder *WhereBuilder) WhereOperate(column, operate string, value interfac
 	return builder
 }
 
-func (builder *WhereBuilder) WhereFunc(f BuilderFunc) where {
+func (builder *WhereBuilder) WhereFunc(f BuilderFunc) WhereInterface {
 	builder.wh = append(builder.wh, &whereStat{
 		operate: "build",
 		value:   f(),
@@ -223,11 +223,11 @@ func (builder *WhereBuilder) WhereFunc(f BuilderFunc) where {
 	return builder
 }
 
-func (builder *WhereBuilder) OrWhere(column string, value interface{}) where {
+func (builder *WhereBuilder) OrWhere(column string, value interface{}) WhereInterface {
 	return builder.OrWhereOperate(column, "=", value)
 }
 
-func (builder *WhereBuilder) OrWhereOperate(column, operate string, value interface{}) where {
+func (builder *WhereBuilder) OrWhereOperate(column, operate string, value interface{}) WhereInterface {
 	builder.orWh = append(builder.orWh, &whereStat{
 		column:  Column(column),
 		operate: operate,
@@ -236,7 +236,7 @@ func (builder *WhereBuilder) OrWhereOperate(column, operate string, value interf
 	return builder
 }
 
-func (builder *WhereBuilder) OrWhereFunc(f BuilderFunc) where {
+func (builder *WhereBuilder) OrWhereFunc(f BuilderFunc) WhereInterface {
 	builder.orWh = append(builder.orWh, &whereStat{
 		operate: "build",
 		value:   f(),
