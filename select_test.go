@@ -3,54 +3,159 @@ package sqlbuilder_test
 import (
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/sureyee/sqlbuilder"
 )
 
+type user struct {
+	status   int8
+	username string
+	mobile   string
+	id       int
+	age      int
+}
+
 func TestSelect(t *testing.T) {
-	sql := "select * from users"
-	builderSql := sqlbuilder.Select("*").From("users").String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status"}).
+		AddRow(1, "zhangsan", 10, 1).
+		AddRow(2, "lisi", 11, 1)
+
+	query := "select * from users"
+	mock.ExpectQuery(query).WillReturnRows(rows)
+
+	buildQuery, builderData := sqlbuilder.Select("*").From("users").Build()
+	row := db.QueryRow(buildQuery, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
 func TestWhere(t *testing.T) {
-	sql := "select * from users where id = 10"
-	builderSql := sqlbuilder.Select("*").From("users").Where("id", 10).String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status"}).
+		AddRow(1, "zhangsan", 10, 1).
+		AddRow(2, "lisi", 11, 1)
+	sql := "select * from users where id = ?"
+	mock.ExpectQuery(sql).WillReturnRows(rows).WithArgs(2)
+	builderSql, builderData := sqlbuilder.Select("*").From("users").Where("id", 2).Build()
+	row := db.QueryRow(builderSql, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
 func TestMultiWhere(t *testing.T) {
-	sql := "select * from users where username = \"zhangsan\" and mobile = \"13111111111\""
-	builderSql := sqlbuilder.Select("*").From("users").Where("username", "zhangsan").Where("mobile", "13111111111").String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status", "mobile"}).
+		AddRow(1, "zhangsan", 10, 1, "13111112222").
+		AddRow(2, "lisi", 11, 1, "13111111111")
+	sql := "select * from users where username = ? and mobile = ?"
+	mock.ExpectQuery(sql).WithArgs("zhangsan", "13111111111").WillReturnRows(rows)
+
+	builderSql, builderData := sqlbuilder.Select("*").
+		From("users").
+		Where("username", "zhangsan").
+		Where("mobile", "13111111111").
+		Build()
+	row := db.QueryRow(builderSql, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status, &data.mobile); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
 func TestWhereIn(t *testing.T) {
-	sql := "select * from users where id in (1, 2, 3, 4)"
-	builderSql := sqlbuilder.Select("*").From("users").WhereIn("id", []int32{1, 2, 3, 4}).String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status", "mobile"}).
+		AddRow(1, "zhangsan", 10, 1, "13111112222").
+		AddRow(2, "lisi", 11, 1, "13111111111")
+	sql := "select * from users where id in (?, ?, ?, ?)"
+	mock.ExpectQuery(sql).WithArgs(1, 2, 3, 4).WillReturnRows(rows)
+	builderSql, builderData := sqlbuilder.Select("*").From("users").WhereIn("id", []int32{1, 2, 3, 4}).Build()
+	row := db.QueryRow(builderSql, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status, &data.mobile); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
 func TestWhereOperate(t *testing.T) {
-	sql := "select * from users where age < 10"
-	builderSql := sqlbuilder.Select("*").From("users").WhereOperate("age", "<", 10).String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status", "mobile"}).
+		AddRow(1, "zhangsan", 15, 1, "13111112222").
+		AddRow(2, "lisi", 11, 1, "13111111111")
+	sql := "select * from users where age < ?"
+	mock.ExpectQuery(sql).WithArgs(12).WillReturnRows(rows)
+	builderSql, builderData := sqlbuilder.Select("*").From("users").WhereOperate("age", "<", 12).Build()
+	row := db.QueryRow(builderSql, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status, &data.mobile); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
 func TestWhereLike(t *testing.T) {
-	sql := "select * from users where username like \"%zhang%\""
-	builderSql := sqlbuilder.Select("*").From("users").WhereLike("username", "%zhang%").String()
-	if sql != builderSql {
-		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status", "mobile"}).
+		AddRow(1, "zhangsan", 15, 1, "13111112222").
+		AddRow(2, "lisi", 11, 1, "13111111111")
+	sql := "select * from users where username like ?"
+	mock.ExpectQuery(sql).WithArgs("%zhang%").WillReturnRows(rows)
+
+	builderSql, builderData := sqlbuilder.Select("*").From("users").WhereLike("username", "%zhang%").Build()
+	row := db.QueryRow(builderSql, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status, &data.mobile); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
 
@@ -200,6 +305,14 @@ func TestInnerJoin(t *testing.T) {
 		"books",
 		sqlbuilder.WhereColumn("books.user_id", "users.id"),
 	).String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}
+
+func TestSelectBool(t *testing.T) {
+	sql := "select * from users where status = 1"
+	builderSql := sqlbuilder.Select("*").From("users").Where("status", true).String()
 	if sql != builderSql {
 		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
 	}

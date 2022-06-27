@@ -188,6 +188,8 @@ func (builder *SelectBuilder) String() string {
 			return strconv.Itoa(int(v.Int()))
 		case reflect.String:
 			return "\"" + strings.ReplaceAll(strings.ReplaceAll(v.String(), "\\", "\\\\"), "\"", "\\\"") + "\""
+		case reflect.Bool:
+			return "1"
 		default:
 			return ""
 		}
