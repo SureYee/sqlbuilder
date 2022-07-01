@@ -127,8 +127,10 @@ func (builder *DeleteBuilder) Build() (string, []interface{}) {
 		sql := fmt.Sprintf("delete from %s", builder.table)
 		if builder.where != nil {
 			where, whereData := builder.where.Build()
-			sql = fmt.Sprintf("%s where %s", sql, where)
-			builder.data = append(builder.data, whereData...)
+			if where != "" {
+				sql = fmt.Sprintf("%s where %s", sql, where)
+				builder.data = append(builder.data, whereData...)
+			}
 		}
 		builder.sql = sql
 		builder.isBuilt = true

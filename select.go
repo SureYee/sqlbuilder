@@ -38,8 +38,10 @@ func (builder *SelectBuilder) Build() (string, []interface{}) {
 		// 构建where语句
 		if builder.where != nil {
 			where, whereData := builder.where.Build()
-			sql = fmt.Sprintf("%s where %s", sql, where)
-			builder.data = append(builder.data, whereData...)
+			if where != "" {
+				sql = fmt.Sprintf("%s where %s", sql, where)
+				builder.data = append(builder.data, whereData...)
+			}
 		}
 		// 构建groupby
 		if len(builder.groupBy) > 0 {

@@ -114,6 +114,30 @@ func TestWhereIn(t *testing.T) {
 	}
 }
 
+func TestNilWhereFunc(t *testing.T) {
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "username", "age", "status", "mobile"}).
+		AddRow(1, "zhangsan", 15, 1, "13111112222").
+		AddRow(2, "lisi", 11, 1, "13111111111")
+	sql := "select * from users"
+	mock.ExpectQuery(sql).WillReturnRows(rows)
+	builderSql, builderData := sqlbuilder.Select("*").From("users").WhereFunc(func() sqlbuilder.Builder {
+		return nil
+	}).Build()
+	row := db.QueryRow(builderSql, builderData...)
+	var data user
+	if err := row.Scan(&data.id, &data.username, &data.age, &data.status, &data.mobile); err != nil {
+		t.Errorf("row.Scan error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
 func TestWhereOperate(t *testing.T) {
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {

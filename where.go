@@ -118,7 +118,7 @@ func (stat *whereStat) buildSql() (string, []interface{}) {
 		}
 		return v.Build()
 	}
-	panic("where func value must Builder")
+	return "", nil
 }
 
 func (stat *whereStat) buildBetween() (string, []interface{}) {
@@ -251,6 +251,9 @@ func (builder *WhereBuilder) Build() (string, []interface{}) {
 		// builder where
 		for _, v := range builder.wh {
 			w, d := v.Build()
+			if w == "" {
+				break
+			}
 			if sql == "" {
 				sql = w
 				data = d
@@ -264,6 +267,9 @@ func (builder *WhereBuilder) Build() (string, []interface{}) {
 			// build or where
 			for _, v := range builder.orWh {
 				w, d := v.Build()
+				if w == "" {
+					break
+				}
 				if sql == "" {
 					sql = w
 					data = d

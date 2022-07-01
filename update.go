@@ -147,8 +147,10 @@ func (builder *UpdateBuilder) Build() (string, []interface{}) {
 		sql := fmt.Sprintf("update %s set %s", builder.table, strings.Join(fields, ", "))
 		if builder.where != nil {
 			where, whereData := builder.where.Build()
-			sql = fmt.Sprintf("%s where %s", sql, where)
-			builder.data = append(builder.data, whereData...)
+			if where != "" {
+				sql = fmt.Sprintf("%s where %s", sql, where)
+				builder.data = append(builder.data, whereData...)
+			}
 		}
 		builder.sql = sql
 		builder.isBuilt = true
