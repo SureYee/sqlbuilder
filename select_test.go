@@ -341,3 +341,11 @@ func TestSelectBool(t *testing.T) {
 		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
 	}
 }
+
+func TestUpdateLocker_Build(t *testing.T) {
+	sql := "select * from users where status = 1 for update"
+	builderSql := sqlbuilder.Select("*").From("users").Where("status", true).LockForUpdate().String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}

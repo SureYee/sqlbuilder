@@ -20,6 +20,7 @@ type SelectBuilder struct {
 	fields  []string
 	order   []string
 	groupBy []string
+	locker  Locker
 	data    []interface{}
 }
 
@@ -43,7 +44,7 @@ func (builder *SelectBuilder) Build() (string, []interface{}) {
 				builder.data = append(builder.data, whereData...)
 			}
 		}
-		// 构建groupby
+		// 构建group by
 		if len(builder.groupBy) > 0 {
 			sql = fmt.Sprintf("%s group by %s", sql, strings.Join(builder.groupBy, ", "))
 		}
@@ -60,6 +61,11 @@ func (builder *SelectBuilder) Build() (string, []interface{}) {
 
 		if builder.limit > 0 || builder.offset > 0 {
 			sql = fmt.Sprintf("%s limit %d, %d", sql, builder.offset, builder.limit)
+		}
+
+		if builder.locker != nil {
+			lockSql, _ := builder.locker.Build()
+			sql = fmt.Sprintf("%s %s", sql, lockSql)
 		}
 
 		builder.sql = sql
@@ -94,7 +100,7 @@ func (builder *SelectBuilder) WhereOperate(column, operate string, value interfa
 	return builder
 }
 
-// Where where some_column = value
+// Where some_column = value
 // 普通的where语句
 func (builder *SelectBuilder) Where(column string, value interface{}) *SelectBuilder {
 	builder.getWhere().Where(column, value)
@@ -234,5 +240,15 @@ func (builder *SelectBuilder) InnerJoin(table string, on WhereInterface) *Select
 		table: table,
 		on:    on,
 	})
+	return builder
+}
+
+func (builder *SelectBuilder) LockForUpdate() *SelectBuilder {
+	builder.locker = new(UpdateLocker)
+	return builder
+}
+
+func (builder *SelectBuilder) LockShareMode() *SelectBuilder {
+	builder.locker = new(ShareLocker)
 	return builder
 }
