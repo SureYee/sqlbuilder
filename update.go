@@ -101,6 +101,16 @@ func (builder *UpdateBuilder) OrWhereFunc(f BuilderFunc) *UpdateBuilder {
 	return builder
 }
 
+func (builder *UpdateBuilder) Increment(column string, value interface{}) *UpdateBuilder {
+	builder.Set(column, Raw(column+" + ?", value))
+	return builder
+}
+
+func (builder *UpdateBuilder) Decrement(column string, value interface{}) *UpdateBuilder {
+	builder.Set(column, Raw(column+" - ?", value))
+	return builder
+}
+
 func (builder *UpdateBuilder) String() string {
 	sql, data := builder.Build()
 	index := 0
@@ -140,8 +150,14 @@ func (builder *UpdateBuilder) Build() (string, []interface{}) {
 	if !builder.isBuilt {
 		fields := make([]string, 0, len(builder.fieldData))
 		for k, v := range builder.fieldData {
-			fields = append(fields, k+" = ?")
-			builder.data = append(builder.data, v)
+			if t, ok := v.(Builder); ok {
+				c, d := t.Build()
+				fields = append(fields, k+" = "+c)
+				builder.data = append(builder.data, d...)
+			} else {
+				fields = append(fields, k+" = ?")
+				builder.data = append(builder.data, v)
+			}
 		}
 
 		sql := fmt.Sprintf("update %s set %s", builder.table, strings.Join(fields, ", "))

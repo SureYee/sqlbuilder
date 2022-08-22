@@ -9,3 +9,19 @@ type Builder interface {
 type BuilderFunc func() Builder
 
 type Column string
+
+type RawExpr struct {
+	expr string
+	data []interface{}
+}
+
+func Raw(expr string, data ...interface{}) *RawExpr {
+	return &RawExpr{
+		expr: expr,
+		data: data,
+	}
+}
+
+func (r *RawExpr) Build() (string, []interface{}) {
+	return r.expr, r.data
+}

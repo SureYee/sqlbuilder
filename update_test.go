@@ -80,3 +80,11 @@ func TestUpdateWhereBetween(t *testing.T) {
 		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
 	}
 }
+
+func TestUpdateBuilder_Decrement(t *testing.T) {
+	sql := "update users set age = age + 1 where id = 1"
+	builderSql := sqlbuilder.Update("users").Increment("age", 1).Where("id", 1).String()
+	if sql != builderSql {
+		t.Errorf("expected:`%v`, got:`%v`", sql, builderSql)
+	}
+}
