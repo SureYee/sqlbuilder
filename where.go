@@ -139,9 +139,10 @@ func (stat *whereStat) buildIn() (string, []interface{}) {
 		for i := 0; i < v.Len(); i++ {
 			replace[i] = "?"
 			switch v.Index(i).Kind() {
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				data[i] = int(v.Index(i).Int())
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				data[i] = int(v.Index(i).Uint())
 			case reflect.String:
 				data[i] = v.Index(i).String()
 			case reflect.Interface:
